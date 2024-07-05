@@ -3,6 +3,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.Callable;
+import java.util.List;
+import java.util.ArrayList;
 
 public class HttpGetExample {
 
@@ -26,25 +32,37 @@ public class HttpGetExample {
     }
 
     public static void main(String[] args) {
-        Runnable task = new Runnable() {
-            @Override
-            public void run() {
-                String url = " https://www.baeldung.com/java-http-request";
-                String webpage = getWebpage(url);
-                System.out.println(webpage);
-            }
+        ExecutorService executor = Executors.newFixedThreadPool(5);
+        List<Future<String>> futures = new ArrayList<>();
+
+        String[] urls = {
+                "https://www.google.com",
+                "https://www.google.com",
+                "https://www.google.com",
+                "https://www.google.com",
+                "https://www.google.com"
         };
 
-        Thread thread = new Thread(task);
-        thread.start();
-        System.out.println("Thread has been started");
-
-        try {
-            thread.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        for (String url : urls) {
+            Callable<String> task = new Callable<String>() {
+                @Override
+                public String call() throws Exception {
+                    return getWebpage(url);
+                }
+            };
+            futures.add(executor.submit(task));
         }
 
-        System.out.println("Thread has been completed"); //
+        executor.shutdown();
+
+        for (Future<String> future : futures) {
+            try {
+                System.out.println(future.get());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        System.out.println("All tasks have been completed");
     }
 }
